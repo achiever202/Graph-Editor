@@ -1,0 +1,354 @@
+<html>
+
+<head>
+	<title>Graph Editor</title>
+	<link rel="stylesheet" type="text/css" href="assignment3.css">
+</head>
+
+<body>
+
+	<h1 id="header">Graph Editor Interface</h1>
+	
+	<p>
+		<!-- This division contains the canvas for drawing. -->
+		<div id="canvas_division">
+			<canvas id="graph" width=600 height=600>
+			</canvas>
+		</div>
+		<!-- This division contains the form with radio buttons for different modes in the user interface -->
+		<div id="modes">
+			<form class = "radio_buttons">
+				<input type="radio" name="Modes" id="add_vertex" value="add_vertices" checked>Add Vertices<br>
+				<input type="radio" name="Modes" id="add_edge" value="add_edges">Add Edges<br>
+				<input type="radio" name="Modes" id="move_vertex" value="move_vertices">Move Vertices<br>
+				<input type="radio" name="Modes" id="delete_vertex" value="delete_vertices">Delete Vertices<br>
+				<input type="radio" name="Modes" id="delete_edge" value="delete_edges">Delete Edges<br>
+				<input type="radio" name="Modes" id="path" value="shortest_path">Find Shortest Path<br>
+				<input type="radio" name="Modes" id="mst" value="spanning_tree">Find Minimum Spanning Tree<br>
+			</form>
+		</div>
+	</p>
+	<script>
+		
+		/* graph_canvas is the canvas object.
+		 * canvas_left stores the left offset of the canvas.
+		 * canvas_top stores the top offset of the canvas.
+		 * vertices stores the vertices of the graph.
+		 * edges stores the edges in the graph.
+		 */
+		var graph_canvas = document.getElementById('graph'),
+			canvas_left = graph_canvas.offsetLeft,
+			canvas_top = graph_canvas.offsetTop,
+			vertices = new Array(),
+			edges = new Array(),
+			last_clicked = 1,
+			n = 0,
+			last_selected = 0
+			vertex_radius = 10;
+		
+		function gen_colours()		// This function generates random colours.
+		{
+			r = Math.floor(Math.random() * 256).toString(16);
+			g = Math.floor(Math.random() * 256).toString(16);
+			b = Math.floor(Math.random() * 256).toString(16);
+			s="#";
+			if(r.length<2) s+="0"; s+=r;
+			if(g.length<2) s+="0"; s+=g;
+			if(b.length<2) s+="0"; s+=b;
+			return s;
+		}
+		
+		// This function draws the circle.
+		function drawCircle(x, y)
+		{
+			var context = graph_canvas.getContext('2d');
+			context.beginPath();
+			context.fillStyle = "#ff0000";
+			context.strokeStyle = "#000000";
+			context.arc(x, y, vertex_radius, 0, Math.PI*2);
+			context.closePath();
+			context.fill();
+			context.stroke();
+		}
+		
+		function drawLine(sx, sy, ex, ey)
+		{
+			var context = graph_canvas.getContext('2d');
+			context.beginPath();
+			context.moveTo(sx, sy);
+			context.lineTo(ex, ey);
+			context.closePath();
+			context.stroke();
+		}
+		
+		function isVertex(point)
+		{
+			for(i=0; i<vertices.length; i++)
+			{
+			
+				var distance = (vertices[i].x-point.x)*(vertices[i].x-point.x) + (vertices[i].y-point.y)*(vertices[i].y-point.y);
+					
+				if(distance<=vertex_radius*vertex_radius)
+					break;
+			}
+			
+			return i;
+		}
+		
+		function canvasRedraw()
+		{
+			context = graph_canvas.getContext('2d');
+			context.clearRect(0,0,600,600);
+			
+			for(i=0; i<edges.length; i++)
+				drawLine(vertices[edges[i].start].x, vertices[edges[i].start].y, vertices[edges[i].end].x, vertices[edges[i].end].y);
+				
+			for(i=0; i<vertices.length; i++)
+				drawCircle(vertices[i].x, vertices[i].y);
+		}
+		
+		function clickedPoint(event)
+		{
+			var x, y;
+			if(event.pageX || event.pageY)
+			{
+				x = event.pageX;
+				y = event.pageY;
+			}
+			else
+			{
+				x = event.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+				y = event.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+			}
+			
+			x -= canvas_left;
+			y -= canvas_top;
+			
+			var point = new Object();
+			point.x = x;
+			point.y = y;
+			return point;
+		}
+		
+		// This function draws a vertex in the canvas.
+		function drawVertex(event)
+		{
+			last_clicked = 1;
+			n++;
+			
+			var point = clickedPoint(event);
+			point.id = n;
+			n++;
+			vertices.push(point);
+			
+			// drawing the vertex on the canvas.
+			drawCircle(point.x, point.y);
+		}
+		
+		// This function draws an edge.
+		function drawEdge(event)
+		{
+			if(last_clicked==2)
+			{
+				last_clicked = 1;
+				
+				point = clickedPoint(event);
+				var i = isVertex(point);
+				if(i<vertices.length)
+				{
+					edge = new Object();
+					edge.start = last_selected;
+					edge.end = i;
+					edge.startx = vertices[last_selected].x;
+					edge.starty = vertices[last_selected].y;
+					edge.endx = vertices[i].x;
+					edge.endy = vertices[i].y;
+					edges.push(edge);
+					
+					canvasRedraw();
+				}
+				else
+					alert("No vertex selected. Edge cannot be drawn.");
+			}
+			else
+			{
+				var i=0;
+				point = clickedPoint(event);
+				var i = isVertex(point);
+				if(i<vertices.length)
+				{
+					last_selected = i;
+					last_clicked = 2;
+				}
+			}
+		}
+		
+		
+		
+		function moveVertex(event)
+		{
+			point = clickedPoint(event);
+			var i = isVertex(point);
+			if(i<vertices.length)
+			{
+				last_clicked = 3;
+				last_selected = i;
+			}
+		}
+		
+		function deleteVertex(event)
+		{
+			point = clickedPoint(event);
+			i = isVertex(point);
+			if(i<vertices.length)
+			{
+				vertices.splice(i,1);
+				
+				var temp_edges = new Array();
+				/*for(j=0; j<edges.length; j++)
+				{
+					if(!(edges[j].start==i || edges[j].end==i))
+					{
+						var temp = edges[j];
+						for(k=0; k<vertices.length; k++)
+						{
+							if(vertices[k].x==temp.startx && vertices[k].y==temp.starty)
+								temp.start = k;
+								
+							if(vertices[k].x==temp.endx && vertices[k].y==temp.endy)
+								temp.end = k;
+						}
+						temp_edges.push(temp);
+					}
+				}*/
+				
+				for(j=0; j<edges.length; j++)
+				{
+					if(!(edges[j].start==i || edges[j].end==i))
+					{
+						var temp = edges[j];
+						if(temp.start>i)
+							temp.start--;
+						if(temp.end>i)
+							temp.end--;
+						temp_edges.push(temp);
+					}
+				}
+				edges = temp_edges;
+				canvasRedraw();
+			}
+		}
+		
+		function deleteEdge(event)
+		{
+			if(last_clicked==5)
+			{
+				last_clicked = 1;
+				point = clickedPoint(event);
+				i = isVertex(point);
+				if(i<vertices.length)
+				{
+					for(j=0; j<edges.length; j++)
+						if((edges[j].start==i && edges[j].end==last_selected)||(edges[j].start==last_selected && edges[j].end==i))
+							break;
+							
+					if(j<edges.length)
+						edges.splice(j, 1);
+				}
+				canvasRedraw();
+			}
+			else
+			{
+				point = clickedPoint(event);
+				i = isVertex(point);
+				if(i<vertices.length)
+				{
+					last_clicked = 5;
+					last_selected = i;
+				}
+			}
+		}
+		
+		function shortestPath(event)
+		{
+			if(last_clicked==6)
+			{
+			}
+			else
+			{
+				point = clickedPoint(event);
+				i = isVertex(point);
+				if(i<vertices.length)
+				{
+					last_selected = i;
+					last_clicked = 6;
+				}
+			}
+		}
+		
+		// This function handles the click event for various modes.
+		function clickEvent(event)
+		{
+			if(document.getElementById('add_vertex').checked)
+				drawVertex(event);
+			
+			else if(document.getElementById('add_edge').checked)
+				drawEdge(event);
+				
+			else if(document.getElementById('move_vertex').checked)
+				moveVertex(event);
+				
+			else if(document.getElementById('delete_vertex').checked)
+				deleteVertex(event);
+				
+			else if(document.getElementById('delete_edge').checked)
+				deleteEdge(event);
+				
+			else if(document.getElementById('path').checked)
+				shortestPath(event);
+		}
+		
+		function moveEvent(event)
+		{
+			if(last_clicked==3)
+			{
+				point = clickedPoint(event);
+				vertices[last_selected].x = point.x;
+				vertices[last_selected].y = point.y;
+				canvasRedraw();
+			}
+			
+		}
+		
+		function upEvent(event)
+		{
+			if(last_clicked==3)
+			{
+				for(j=0; j<edges.length; j++)
+				{
+					if(edges[j].start==last_selected)
+					{
+						edges[j].startx = vertices[last_selected].x;
+						edges[j].starty = vertices[last_selected].y;
+					}
+					
+					if(edges[j].end==last_selected)
+					{
+						edges[j].endx = vertices[last_selected].x;
+						edges[j].endy = vertices[last_selected].y;
+					}
+				}	
+				last_clicked = 1;
+			}
+		}
+		
+		// Adding the event listeners to the canvas.
+		graph_canvas.addEventListener('mousedown',clickEvent, false);
+		graph_canvas.addEventListener('mousemove',moveEvent, false);
+		graph_canvas.addEventListener('mouseup', upEvent, false);
+		
+		
+	</script>
+</body>
+
+</html>
