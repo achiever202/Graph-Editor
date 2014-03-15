@@ -1,0 +1,29 @@
+#header
+{
+	text-align: center;
+	color: black;
+}
+
+#canvas_division
+{
+	float: left;
+	width: 601px;
+	height: 601px;
+}
+
+#graph
+{
+	width: 600px;
+	height: 600px;
+	border: 1px solid black;
+}
+
+#modes
+{
+	float: right;
+}
+
+#modes
+{
+	font-size: 20px;
+}
