@@ -5,7 +5,7 @@
 	String edges_string = request.getParameter("edges");
 	String weights_string = request.getParameter("weights");
 	final int start = Integer.parseInt(request.getParameter("start"));
-	final int end = Integer.parseInt(request.getParameter("end"));
+	final int end_node = Integer.parseInt(request.getParameter("end"));
 	
 	
 	String[] edges = edges_string.split(",");
@@ -18,7 +18,6 @@
 			adj_matrix[i][j] = 0;
 	}
 	
-	String send = "";
 	for(int i=0; i<edges.length; i++)
 	{
 		String[] temp = edges[i].split(":");
@@ -63,8 +62,10 @@
 		});
 		temp = dijkstra.get(0);
 		dijkstra.remove(temp);
-		if(temp.index==end)
+		if(temp.index==end_node)
 			break;
+	
+		List <node> update = new LinkedList<node>();
 		
 		for(int i=0; i<dijkstra.size(); i++)
 		{
@@ -73,18 +74,23 @@
 			{
 				if(temp.distance + adj_matrix[temp.index][temp_dij.index] < temp_dij.distance)
 				{
-					dijkstra.remove(temp_dij);
 					temp_dij.distance = temp.distance + adj_matrix[temp.index][temp_dij.index];
 					temp_dij.source = temp.index;
 					vertices[temp_dij.index].source = temp.index;
-					vertices[temp_dij.index].distance = temp.distance + adj_matrix[temp.index][temp_dij.index];
 					dijkstra.add(temp_dij);
 				}
 			}
+			update.add(temp_dij);
 		}
+		
+		while(!dijkstra.isEmpty())
+			dijkstra.remove(dijkstra.get(0));
+		
+		for(int i=0; i<update.size(); i++)
+			dijkstra.add(update.get(i));
 	}
 	
-	if(temp.index!=end || temp.distance==1000000000)
+	if(temp.index!=end_node || temp.distance==1000000000)
 		reply.print("failed!");
 	else
 	{
